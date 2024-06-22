@@ -1,67 +1,82 @@
-import torch
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+
+from typing import Callable, Sequence
+
 import numpy as np
-
-def func(x):
-    return x[0]**3 + 2*x[1]**2 + 4*x[2] + 5*x[3]
-
-# 示例输入，将numpy数组转换为PyTorch张量
-x_input_np = np.array([1.0, 1.0, 1.0, 1.0])
-x_input = torch.tensor(x_input_np, dtype=torch.float32, requires_grad=True)
-
-# 计算函数值
-output = func(x_input)
-
-# 计算梯度
-output.backward()
-
-# 打印结果
-print("函数值:", output.item())
-print("关于 x 的梯度:", x_input.grad.numpy())
-
-# ------------------------------------------------------------
-
 import torch
-import numpy as np
 
-def func(x):
-    return (
-        x[0]**3 + x[0]*x[1]
-        + 2*x[1]**2
-        + 4*x[2]
-        + 5*x[3]
+
+def get_func_1d(func: Callable,
+                x_value: np.ndarray) -> np.ndarray:
+    """
+    __doc__
+    """
+    x_value_tensor = torch.tensor(
+        x_value,
+        dtype=torch.float64,
+        requires_grad=True
     )
 
-# 示例输入，将numpy数组转换为PyTorch张量
-x_input_np = np.array([1.0, 1.0, 1.0, 1.0])
-x_input = torch.tensor(x_input_np, dtype=torch.float32, requires_grad=True)
+    y_value = func(x_value_tensor)
+    y_value.backward(create_graph=True)
 
-# 计算函数值
-output = func(x_input)
+    return x_value_tensor.grad.detach().numpy()
 
-# 计算一阶梯度
-output.backward(create_graph=True)
 
-# 打印函数值和一阶梯度
-print("函数值:", output.item())
-print("关于 x 的一阶梯度:", x_input.grad.detach().numpy())
+def get_func_2d(func: Callable,
+                x_value: np.ndarray) -> np.ndarray:
+    """
+    __doc__
+    """
+    x_value_tensor = torch.tensor(
+        x_value,
+        dtype=torch.float64,
+        requires_grad=True
+    )
 
-# 保存一阶梯度
-first_order_grad = x_input.grad.clone()
+    y_value = func(x_value_tensor)
+    y_value.backward(create_graph=True)
 
-# 计算每个一阶梯度分量对输入变量的二阶梯度
-second_order_grads = []
+    grad_1d = x_value_tensor.grad.clone()
 
-for i in range(len(first_order_grad)):
-    # 对每个一阶梯度分量进行反向传播，计算二阶梯度
-    first_order_grad[i].backward(retain_graph=True)
-    second_order_grads.append(x_input.grad.clone().detach().numpy())
-    
-    # 清除梯度，为计算下一个分量的梯度做准备
-    x_input.grad.zero_()
+    grad_2d = []
+    for i in range(len(grad_1d)):
+        grad_1d[i].backward(retain_graph=True)
+        grad_2d.append(x_value_tensor.grad.clone().detach().numpy())
+        x_value_tensor.grad.zero_()
+    return np.array(grad_2d)
 
-second_order_grads = np.array(second_order_grads)
 
-# 打印结果
-print("关于 x 的一阶梯度:", first_order_grad.detach().numpy())
-print("关于 x 的二阶梯度:")
-print(second_order_grads)
+if __name__ == "__main__":
+
+    def func_01(x: Sequence) -> Sequence:
+        """
+        __doc__
+        """
+        return (
+            x[0]**3 + x[1]**2 + 2*x[2] + 5*x[3]
+        )
+
+    def func_02(x: Sequence) -> Sequence:
+        """
+        __doc__
+        """
+        return (
+            x[0]**3 + x[0]*x[1] + 2*x[1]**2 + 4*x[2] + 5*x[3]
+        )
+
+    x_input_01 = np.ones(4)
+
+    func_01_1d = get_func_1d(
+        func=func_01,
+        x_value=x_input_01
+    )
+
+    func_02_2d = get_func_2d(
+        func=func_02,
+        x_value=x_input_01
+    )
+
+    print(func_01_1d)
+    print(func_02_2d)
