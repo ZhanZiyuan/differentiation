@@ -15,37 +15,33 @@ import numpy as np
 import torch
 
 
-def get_func_1d(func: Callable,
-                x_value: np.ndarray) -> np.ndarray:
+def get_partial_deriv_numerical(func: Callable,
+                                x_value: np.ndarray,
+                                order: int = 1) -> np.ndarray:
     """
     __doc__
     """
     x_value_tensor = torch.tensor(x_value, dtype=torch.float64, requires_grad=True)
 
-    y_value = func(x_value_tensor)
+    if order == 1:
+        y_value = func(x_value_tensor)
+        grad = torch.autograd.grad(y_value, x_value_tensor, create_graph=True)[0]
+        return grad.detach().numpy()
 
-    grad = torch.autograd.grad(y_value, x_value_tensor, create_graph=True)[0]
+    elif order == 2:
+        y_value = func(x_value_tensor)
+        grad_1d = torch.autograd.grad(y_value, x_value_tensor, create_graph=True)[0]
 
-    return grad.detach().numpy()
+        grad_2d = []
+        for grad_i in grad_1d:
+            x_value_tensor.grad = None
+            grad_ij = torch.autograd.grad(grad_i, x_value_tensor, retain_graph=True)[0]
+            grad_2d.append(grad_ij.detach().numpy())
 
+        return np.array(grad_2d)
 
-def get_func_2d(func: Callable,
-                x_value: np.ndarray) -> np.ndarray:
-    """
-    __doc__
-    """
-    x_value_tensor = torch.tensor(x_value, dtype=torch.float64, requires_grad=True)
-
-    y_value = func(x_value_tensor)
-    grad_1d = torch.autograd.grad(y_value, x_value_tensor, create_graph=True)[0]
-
-    grad_2d = []
-    for grad_i in grad_1d:
-        x_value_tensor.grad = None
-        grad_ij = torch.autograd.grad(grad_i, x_value_tensor, retain_graph=True)[0]
-        grad_2d.append(grad_ij.detach().numpy())
-
-    return np.array(grad_2d)
+    else:
+        raise ValueError("Unsupported number of order.")
 
 
 if __name__ == "__main__":
@@ -70,11 +66,19 @@ if __name__ == "__main__":
     x_input_01 = np.ones(10)
 
     start_time_01 = time.time()
-    func_01_1d = get_func_1d(func=func_01, x_value=x_input_01)
+    func_01_1d = get_partial_deriv_numerical(
+        func=func_01,
+        x_value=x_input_01,
+        order=1
+    )
     end_time_01 = time.time()
 
     start_time_02 = time.time()
-    func_01_2d = get_func_2d(func=func_01, x_value=x_input_01)
+    func_01_2d = get_partial_deriv_numerical(
+        func=func_01,
+        x_value=x_input_01,
+        order=2
+    )
     end_time_02 = time.time()
 
     print(
