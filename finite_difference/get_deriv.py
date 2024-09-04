@@ -34,14 +34,14 @@ def get_partial_deriv_analytical(function: sm.Symbol,
         ]
 
     if order == 1:
-        return [sm.diff(function, var) for var in variables]
+        return [sm.Derivative(function, var).doit() for var in variables]
 
     partial_derivatives = [function]
     for _ in range(order):
         current_order_derivatives = []
         for deriv in partial_derivatives:
             current_order_derivatives.extend(
-                [sm.diff(deriv, var) for var in variables]
+                [sm.Derivative(deriv, var).doit() for var in variables]
             )
         partial_derivatives = current_order_derivatives
 
