@@ -17,7 +17,7 @@ def get_partial_deriv_analytical(function: sm.Symbol,
                                  variables: Union[sm.Symbol, list],
                                  order: int = 1) -> Union[sm.Symbol, list]:
     """
-    Get partial derivatives of the specified function.
+    Get partial derivatives via analytical methods.
     """
     if not isinstance(variables, list):
         variables = [variables]
@@ -54,7 +54,7 @@ def get_partial_deriv_numerical(function: Callable,
                                 order: int = 1,
                                 difference: str = "forward") -> np.ndarray:
     """
-    __doc__
+    Get partial derivatives via numerical methods.
     """
     x = np.asarray(x)
     n = x.size

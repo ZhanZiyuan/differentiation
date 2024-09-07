@@ -19,7 +19,8 @@ def get_partial_deriv_numerical(func: Callable,
                                 x_value: np.ndarray,
                                 order: int = 1) -> np.ndarray:
     """
-    __doc__
+    Get partial derivatives
+    via the automatic differentiation.
     """
     x_value_tensor = torch.tensor(x_value, dtype=torch.float64, requires_grad=True)
 
